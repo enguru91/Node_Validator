@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# App Name: XML file validator (keyed mapping + predicate-safe XPaths)
+# App Name: Node_Validator (keyed mapping + predicate-safe XPaths)
 # Purpose: Map parameters rows to XML files by a stable key and compare user-specified label XPaths (supports predicates for repeated nodes)
 # Author: Eshan Gurusinghe
 # Contact: Email:engurusinghe91@gmail.com
