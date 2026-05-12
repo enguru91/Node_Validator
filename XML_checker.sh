@@ -6,6 +6,7 @@
 # Version: 1.0 - checking parameters hardcoded version
 # 1.1 - checking parameters can be imported as text file
 # 1.2 - dynamic to validate any XML format, map XML parameters dynamically, check XML well-formedness
+# 1.3 - New environment text MIME-type validation added
 
 set -o pipefail
 
@@ -61,7 +62,7 @@ extract_value_xpath() {
 }
 
 # --- User Inputs ---
-read -r -p "Enter path to XML location (directory with .xml files OR a single .xml file): " XML_LOC
+read -r -p "Enter path to XML file location (directory with .xml files OR a single .xml file): " XML_LOC
 XML_LOC="${XML_LOC:-./}"
 
 if [[ -d "$XML_LOC" ]]; then
@@ -85,27 +86,29 @@ fi
 echo "Discovered ${#XML_FILES[@]} XML file(s)."
 
 read -r -p "Enter path to parameter text file (should be a .txt with TAB-separated): " MAP_FILE
-if [[ -z "$MAP_FILE" ]]; then
-  echo "ERROR: ⚠️ Parameters file path is required." >&2
-  exit 1
-fi
-if [[ ! -f "$MAP_FILE" ]]; then
-  echo "ERROR: ⚠️ File not found: $MAP_FILE" >&2
-  exit 1
-fi
-if [[ "$MAP_FILE" != *.txt ]]; then
-  echo "ERROR: ⚠️ Parameters file must have .txt extension." >&2
-  exit 1
-fi
 if command -v file >/dev/null 2>&1; then
+  # MIME check with a two-stage approach 
+  # Try --mime-type flag first (GNU/Linux); fall back to plain output (Git Bash/macOS/BSD)
   mime_type=$(file --mime-type -b "$MAP_FILE" 2>/dev/null)
+
+  if [[ -z "$mime_type" ]]; then
+    mime_type=$(file -b "$MAP_FILE" 2>/dev/null)
+  fi
+
   case "$mime_type" in
-    text/*) ;;
-    *) echo "ERROR: ⚠️ '$MAP_FILE' MIME type '$mime_type' is not text/*." >&2; exit 1;;
+    text/*|*ASCII*|*UTF-8*|*Unicode*)
+      ;;
+    "")
+      echo "INFO: ℹ️ Could not detect MIME type for '$MAP_FILE'; relying on .txt extension check." >&2
+      ;;
+    *)
+      echo "ERROR: ⚠️ '$MAP_FILE' does not appear to be a text file (detected: '$mime_type')." >&2
+      exit 1
+      ;;
   esac
 fi
 
-read -r -p "How many parameter points to check in the XML (Number should be similler to parameter file's column count)? " NUM_LABELS
+read -r -p "How many parameter points to check against the target XML file (Number should be similler to parameter file's column count)? " NUM_LABELS
 if [[ -z "$NUM_LABELS" || ! "$NUM_LABELS" =~ ^[0-9]+$ || "$NUM_LABELS" -le 0 ]]; then
   echo "ERROR: ⚠️ Number of labels must be a positive integer." >&2
   exit 1
@@ -117,9 +120,9 @@ declare -a LABEL_XPATHS
 for (( i=1; i<=NUM_LABELS; i++ )); do
   read -r -p "Label $i friendly name: " lname
   [[ -z "$lname" ]] && lname="Label $i"
-  read -r -p "Label $i XPath (supports predicates, EX:- /Entity/EntityInfo/SubjectField[Type='COMMON_NAME']/Value): " lxpath
+  read -r -p "Label $i XML Path (Ex XML predicates path: Entities/Entity/EntityInfo/Subject/SubjectField[Type='FINGER_PRINT']/Value): " lxpath
   if [[ -z "$lxpath" ]]; then
-    echo "ERROR: ⚠️ XPath for Label $i cannot be empty." >&2
+    echo "ERROR: ⚠️ XML Path for Label $i cannot be empty." >&2
     exit 1
   fi
   LABEL_NAMES+=("$lname")
@@ -127,14 +130,14 @@ for (( i=1; i<=NUM_LABELS; i++ )); do
 done
 
 # Key mapping prompts
-read -r -p "Which column index (1-based) in the parameters file is the KEY to match XMLs? (default 1) " KEY_COL
+read -r -p "Which parameter file's column index corrospondance with the target XML KEY? (default 1) " KEY_COL
 KEY_COL="${KEY_COL:-1}"
 if [[ ! "$KEY_COL" =~ ^[1-9][0-9]*$ ]]; then
   echo "ERROR: ⚠️ Key column index must be a positive integer." >&2
   exit 1
 fi
 
-read -r -p "XPath to extract the KEY from XML (default /Entities/Entity/EntityInfo/Name): " XML_KEY_XPATH
+read -r -p "XML Path to extract the KEY from XML (Ex:- /Entities/Entity/EntityInfo/Name): " XML_KEY_XPATH
 XML_KEY_XPATH="${XML_KEY_XPATH:-/Entities/Entity/EntityInfo/Name}"
 
 # Tool availability
