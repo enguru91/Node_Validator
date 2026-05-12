@@ -1,0 +1,35 @@
+<Entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="EntitiesSchema.xsd">
+    <Entity>
+        <PublishCertificatetoTDPS>true</PublishCertificatetoTDPS>
+        <EntityProfile Name="TEST_EP1"/>
+        <KeyGenerationAlgorithm>
+            <Name>RSA</Name>
+            <KeySize>2048</KeySize>
+        </KeyGenerationAlgorithm>
+        <Category>
+            <Modifiable>true</Modifiable>
+            <Name>NODE-OAM</Name>
+        </Category>
+        <EntityInfo>
+            <Name>net10-cu-3</Name>
+            <Subject>
+                <SubjectField>
+                    <Type>ORGANIZATION</Type>
+                    <Value>ABC</Value>
+                </SubjectField>
+                <SubjectField>
+                    <Type>ORGANIZATION_UNIT</Type>
+                    <Value>OAM_VENDOR_NAME</Value>
+                </SubjectField>
+                <SubjectField>
+                    <Type>COUNTRY_NAME</Type>
+                    <Value>JP</Value>
+                </SubjectField>
+                <SubjectField>
+                    <Type>FINGER_PRINT</Type>
+                    <Value>ORU_ABCNX000557</Value>
+                </SubjectField>
+            </Subject>
+        </EntityInfo>
+    </Entity>
+</Entities>
